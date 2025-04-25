@@ -102,7 +102,7 @@ function component(width, height, color, x, y) {
 }
 
 function updateGameArea() {
-    myGamePiece.speedX = 0;
+    myGamePiece.speedX = -0.6;
     myGamePiece.speedY = 0;
 
     // Boundaries
