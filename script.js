@@ -14,7 +14,7 @@ const levelHtml = document.getElementById("level");
 const levelPopUpHtml = document.getElementById("levelPopUp");
 
 function startGame() {
-    myGamePiece = new component(lengthOfPiece, lengthOfPiece, "darkblue", 500, (788 / 2) - 30);
+    myGamePiece = new component(lengthOfPiece, lengthOfPiece, "darkblue", 500, (window.innerHeight / 2) - 30);
     myGameArea.start();
 }
 
@@ -60,44 +60,34 @@ let myGameArea = {
 };
 
 function everyinterval(n) {
-    if ((myGameArea.frameNo / n) % 1 == 0) { return true; }
-    return false;
+    return myGameArea.frameNo % n === 0;
 }
 
 function component(width, height, color, x, y) {
     this.gamearea = myGameArea;
     this.width = width;
     this.height = height;
-    this.speedX = 0;
-    this.speedY = 0;
+    this.color = color;
     this.x = x;
     this.y = y;
+    this.speedX = 0;
+    this.speedY = 0;
     this.update = function () {
-        ctx = myGameArea.context;
-        ctx.fillStyle = color;
+        const ctx = myGameArea.context;
+        ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     };
     this.newPos = function () {
         this.x += this.speedX;
         this.y += this.speedY;
     };
-    this.crashWith = function (otherobj) {
-        let myleft = this.x;
-        let myright = this.x + (this.width);
-        let mytop = this.y;
-        let mybottom = this.y + (this.height);
-        let otherleft = otherobj.x;
-        let otherright = otherobj.x + (otherobj.width);
-        let othertop = otherobj.y;
-        let otherbottom = otherobj.y + (otherobj.height);
-        let crash = true;
-        if ((mybottom < othertop) ||
-            (mytop > otherbottom) ||
-            (myright < otherleft) ||
-            (myleft > otherright)) {
-            crash = false;
-        }
-        return crash;
+    this.crashWith = function (other) {
+        return !(
+            this.y + this.height < other.y ||
+            this.y > other.y + other.height ||
+            this.x + this.width < other.x ||
+            this.x > other.x + other.width
+        );
     };
 }
 
@@ -106,12 +96,21 @@ function updateGameArea() {
     myGamePiece.speedY = 0;
 
     // Boundaries
-    if (myGamePiece.x <= 0) { myGamePiece.speedX = 0; myGamePiece.x = 0; }
-    if (myGamePiece.y <= 0) { myGamePiece.speedY = 0; myGamePiece.y = 0; }
-    if (myGamePiece.y >= myGameArea.canvas.height - lengthOfPiece) { myGamePiece.speedY = 0; myGamePiece.y = myGameArea.canvas.height - lengthOfPiece; }
+    if (myGamePiece.x <= 0) {
+        myGamePiece.speedX = 0;
+        myGamePiece.x = 0;
+    }
+    if (myGamePiece.y <= 0) {
+        myGamePiece.speedY = 0;
+        myGamePiece.y = 0;
+    }
+    if (myGamePiece.y >= myGameArea.canvas.height - lengthOfPiece) {
+        myGamePiece.speedY = 0;
+        myGamePiece.y = myGameArea.canvas.height - lengthOfPiece;
+    }
 
     // Crash detection
-    for (i = 0; i < myObstacles.length; i++) {
+    for (let i = 0; i < myObstacles.length; i++) {
         if (myGamePiece.crashWith(myObstacles[i])) {
             myGameArea.stop();
             tryAgainButton.hidden = false;
@@ -119,15 +118,17 @@ function updateGameArea() {
                 maxScore = score;
             }
             maxScoreHtml.innerHTML = `Max Score: ${maxScore}`;
+            return;
         }
     }
 
     // Coin collection
-    for (i = 0; i < myCoins.length; i++) {
+    for (let i = 0; i < myCoins.length; i++) {
         if (myGamePiece.crashWith(myCoins[i])) {
-            myCoins = [];
+            myCoins.splice(i, 1);
             score++;
             scoreHtml.innerHTML = `Score: ${score}`;
+            break;
         }
     }
 
@@ -137,39 +138,45 @@ function updateGameArea() {
         levelHtml.innerHTML = `Level ${level}`;
         levelPopUpHtml.innerHTML = `Level ${level}`;
         levelPopUpHtml.hidden = false;
-        setTimeout(function () {
+        setTimeout(() => {
             levelPopUpHtml.hidden = true;
         }, 750);
         amount -= 20;
         maxSize += 20;
     }
 
-    // Create obstacles
-    let x, y;
+    // Create obstacle
+
     myGameArea.clear();
     myGameArea.frameNo++;
-    if (myGameArea.frameNo == 1 || everyinterval(amount)) {
-        let h = Math.floor(Math.random() * (maxSize - 40 + 1) + 40);
-        x = myGameArea.canvas.width;
-        y = Math.floor(Math.random() * myGameArea.canvas.height);
+    if (myGameArea.frameNo === 1 || everyinterval(amount)) {
+        const h = Math.floor(Math.random() * (maxSize - 40 + 1) + 40);
+        const x = myGameArea.canvas.width;
+        const y = Math.floor(Math.random() * myGameArea.canvas.height);
         myObstacles.push(new component(h, h, "darkred", x, y));
     }
-    for (i = 0; i < myObstacles.length; i++) {
-        myObstacles[i].x += -1.2;
-        myObstacles[i].update();
-    }
 
-    // Create coins
-    if (myGameArea.frameNo == 1 || everyinterval(1000)) {
-        let h = Math.floor(Math.random() * (25 - 15 + 1) + 15);
-        x = myGameArea.canvas.width;
-        y = Math.floor(Math.random() * myGameArea.canvas.height);
+    // Update obstacles
+    myObstacles.forEach((obstacle) => {
+        obstacle.x -= 1.2;
+        obstacle.update();
+    });
+    myObstacles = myObstacles.filter(o => o.x + o.width > 0);
+
+    // Create coin
+    if (myGameArea.frameNo === 1 || everyinterval(1000)) {
+        const h = Math.floor(Math.random() * (25 - 15 + 1) + 15);
+        const x = myGameArea.canvas.width;
+        const y = Math.floor(Math.random() * myGameArea.canvas.height);
         myCoins.push(new component(h, h, "gold", x, y));
     }
-    for (i = 0; i < myCoins.length; i++) {
-        myCoins[i].x += -1.5;
-        myCoins[i].update();
-    }
+
+    // Update coins
+    myCoins.forEach((coin) => {
+        coin.x -= 1.5;
+        coin.update();
+    });
+    myCoins = myCoins.filter(c => c.x + c.width > 0);
 
     // Movement
     if (myGameArea.keys && myGameArea.keys[37]) { myGamePiece.speedX = -2; }
