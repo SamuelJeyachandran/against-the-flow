@@ -1,0 +1,254 @@
+/* === Base Styles === */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #001F3F;
+    background: linear-gradient(270deg, rgba(0, 31, 63, 1) 0%, rgba(0, 116, 217, 1) 100%);
+
+    /* ocean feel */
+
+    /* background-image: url('background-flow.svg');
+    background-size: cover;
+    background-position: center; */
+
+    /* background: linear-gradient(to bottom, #001f3f, #0074D9);
+    background-image: url('noise.png'); /* Use a transparent noise image */
+    /* background-blend-mode: overlay; */
+}
+
+canvas {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    margin: auto;
+    background-color: hsl(0, 0%, 90%);
+    border: 4px solid #333;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 11;
+    opacity: 0;
+    animation: fadeInCanvas 0.6s ease forwards;
+    animation-delay: 0.2s;
+    /* display: none; */
+}
+
+/* === Animations === */
+@keyframes fadeInCanvas {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutCanvas {
+    to {
+        opacity: 0.5;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* === HUD / Overlay === */
+#title {
+    display: grid;
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#score,
+#maxScore,
+#level,
+#levelPopUp {
+    position: absolute;
+    z-index: 20;
+    color: black;
+}
+
+#score {
+    top: 2.5%;
+    left: 92%;
+}
+
+#maxScore {
+    top: 0%;
+    left: 92%;
+}
+
+#level {
+    top: 0%;
+    left: 1.5%;
+}
+
+#levelPopUp {
+    top: 2%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: fadeInUp 0.5s ease;
+}
+
+#deathOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 20;
+    /* below canvas and UI */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+/* === Menu === */
+#menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    z-index: 20;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 1;
+    transform: scale(1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#menu.hidden {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+h1 {
+    font-size: 48px;
+    margin-bottom: 60px;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* === Buttons (Common Style Base) === */
+.start,
+#tryagain,
+#back,
+#creditsClose {
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+    color: white;
+    z-index: 20;
+}
+
+/* === Start Buttons === */
+.start {
+    background-color: #bf2f2c;
+    padding: 14px 32px;
+    font-size: 20px;
+    animation: fadeInUp 0.6s ease;
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.start:hover {
+    background-color: #ad2626;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* === Try Again Button === */
+#tryagain {
+    background-color: #bf2f2c;
+    width: 225px;
+    height: 100px;
+    font-size: 40px;
+    position: fixed;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: fadeInUp 0.6s ease;
+}
+
+#tryagain:hover {
+    background-color: #ad2626;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* === Back Button === */
+#back {
+    background-color: #484848;
+    width: 150px;
+    height: 80px;
+    font-size: 30px;
+    text-align: center;
+    position: fixed;
+    top: 57%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: fadeInUp 0.6s ease;
+}
+
+#back:hover {
+    background-color: #363636;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* === Credits Section === */
+#creditsButton {
+    top: 66%;
+}
+
+#credits {
+    border: none;
+    border-radius: 12px;
+
+    background-color: #bf2f2c;
+    padding: 14px 32px;
+    font-size: 15px;
+    position: fixed;
+    top: 76%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+    color: white;
+    z-index: 20;
+}
+
+#creditClose {
+    background-color: #696969;
+    font-size: 15px;
+    padding: 10px 20px;
+}
+
+/* === Button Placement === */
+#startNormalMode {
+    top: 42%;
+}
+
+#startHardMode {
+    top: 50%;
+}
+
+#startEndlessMode {
+    top: 58%;
+}

@@ -4,46 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Against the Flow</title>
-    <style>
-        canvas {
-            border: 2px solid #cccaca;
-            background-color: #f9f9f9;
-        }
-        #tryagain {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #score {
-            position: absolute;
-            top: 2.5%;
-            left: 92%;
-        }
-        #maxScore {
-            position: absolute;
-            top: 0%;
-            left: 92%;
-        }
-        #level {
-            position: absolute;
-            top: 0%;
-            left: 1.5%;
-        }
-        #levelPopUp {
-            position: absolute;
-            top: 2%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-    </style>
+    <link rel="icon" type="image/png" href="/favicon_io/favicon.ico">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body onload="startGame()">
-    <h4 id="maxScore">Max Score: 0</h4>
-    <h4 id="score">Score: 0</h4>
-    <h2 id="level">Level 1</h2>
+
+<body>
+    <div id="deathOverlay">
+        <h2 id="finalScoreText"></h2>
+    </div>
+    <div id="menu">
+        <div id="menuContent">
+            <h1 id="title"> Against the Flow</h1>
+            <button class="start" id="startNormalMode" onclick="startNormalMode()">Start Normal Mode</button>
+            <button class="start" id="startHardMode" onclick="startHardMode()">Start Hard Mode</button>
+            <button class="start" id="startEndlessMode" onclick="startEndlessMode()">Start Endless Mode</button>
+            <button class="start" id="creditsButton" onclick="showCredits()">Credits</button>
+            <div id="credits" style="display:none;">
+                <p>Game by Samuel Jeyachandran.</p>
+                <button class="start" id="creditClose" onclick="hideCredits()">Close</button>
+            </div>
+        </div>
+    </div>
+    <h4 hidden id="maxScore">Max Score: 0</h4>
+    <h4 hidden id="score">Score: 0</h4>
+    <h2 hidden id="level">Level 1</h2>
     <h1 hidden id="levelPopUp">Level 1</h1>
-    <button hidden id="tryagain" onclick="tryAgain()"><h1>TRY AGAIN</h1></button>
+    <button hidden id="tryagain" onclick="tryAgain()">Try Again</button>
+    <button hidden id="back" onclick="back()">Back</button>
     <script src="script.js"></script>
 </body>
 </html>
