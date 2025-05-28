@@ -9,16 +9,15 @@
 </head>
 
 <body>
-    <div id="deathOverlay">
-        <h2 id="finalScoreText"></h2>
-    </div>
+    <div id="deathOverlay"></div>
+    <div id="pauseOverlay"></div>
     <div id="menu">
         <div id="menuContent">
             <h1 id="title"> Against the Flow</h1>
             <button class="start" id="startNormalMode" onclick="startNormalMode()">Start Normal Mode</button>
             <button class="start" id="startHardMode" onclick="startHardMode()">Start Hard Mode</button>
-            <button class="start" id="startEndlessMode" onclick="startEndlessMode()">Start Endless Mode</button>
-            <button class="start" id="creditsButton" onclick="showCredits()">Credits</button>
+            <button class="start" id="startExtremeMode" onclick="startExtremeMode()">Start Extreme Mode</button>
+            <button class="start" id="creditsButton" onclick="toggleCredits()">Credits</button>
             <div id="credits" style="display:none;">
                 <p>Game by Samuel Jeyachandran.</p>
                 <button class="start" id="creditClose" onclick="hideCredits()">Close</button>
@@ -29,6 +28,7 @@
     <h4 hidden id="score">Score: 0</h4>
     <h2 hidden id="level">Level 1</h2>
     <h1 hidden id="levelPopUp">Level 1</h1>
+    <h2 id="finalScoreText"></h2>
     <button hidden id="tryagain" onclick="tryAgain()">Try Again</button>
     <button hidden id="back" onclick="back()">Back</button>
     <script src="script.js"></script>

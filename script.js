@@ -12,10 +12,23 @@ let maxSize = 40;
 let level = 1;
 let obstacleSpeed = 1.2;
 let mode = ""
-let isPaused = false;
+let pPressed = false;
+let paused = false;
 let hitboxesShown = false
 let hPressed = false;
 let zxPressed = false;
+let toggledCredits = false;
+let lastTime = 0;
+let gameState = 'menu'; // 'menu', 'playing', 'paused', 'gameOver'
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const delta = timestamp - lastTime;
+    lastTime = timestamp;
+    updateGameArea(delta);
+    if (!paused && !isGameOver) {
+        requestAnimationFrame(gameLoop);
+    }
+}
 const coinSound = new Audio("/sounds/coin_collect.mp3");
 const sonicboom = new Audio("/sounds/plane_sonicboom.mp3");
 const deathSound = new Audio("/sounds/videogame-death-sound.mp3");
@@ -37,12 +50,17 @@ const maxScoreHtml = document.getElementById("maxScore");
 const levelHtml = document.getElementById("level");
 const levelPopUpHtml = document.getElementById("levelPopUp");
 const deathOverlay = document.getElementById("deathOverlay")
+const pauseOverlay = document.getElementById("pauseOverlay")
+const finalScoreText = document.getElementById("finalScoreText")
+pauseOverlay.classList.remove("visible");
+pauseOverlay.style.opacity = "0";
+pauseOverlay.style.pointerEvents = "none";
 
 function startGameMode(modef) {
     const settings = {
-        normal: { amount: 150, maxSize: 40, obstacleSpeed: 1.2 },
-        hard: { amount: 100, maxSize: 60, obstacleSpeed: 1.5 },
-        endless: { amount: 60, maxSize: 80, obstacleSpeed: 1.8 }
+        Normal: { amount: 150, maxSize: 40, obstacleSpeed: 1.2 },
+        Hard: { amount: 100, maxSize: 60, obstacleSpeed: 1.5 },
+        Extreme: { amount: 60, maxSize: 80, obstacleSpeed: 1.8 }
     };
 
     const { amount, maxSize, obstacleSpeed } = settings[modef];
@@ -53,6 +71,7 @@ function startGameMode(modef) {
 function hideMenuAndStart(callback) {
     scoreHtml.hidden = false
     maxScoreHtml.hidden = false
+    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
     levelHtml.hidden = false
     menu.classList.add("hidden");
     callback(); // Start the game
@@ -61,16 +80,17 @@ function hideMenuAndStart(callback) {
     }, 500); // match the transition duration
 }
 
-function showCredits() { document.getElementById("credits").style.display = "block"; }
+function toggleCredits() { if (toggledCredits) { document.getElementById("credits").style.display = "none"; } else { document.getElementById("credits").style.display = "block"; } toggledCredits = !toggledCredits }
 function hideCredits() { document.getElementById("credits").style.display = "none"; }
 
-function startNormalMode() { startGameMode('normal') }
-function startHardMode() { startGameMode('hard') }
-function startEndlessMode() { startGameMode('endless') }
+function startNormalMode() { startGameMode('Normal') }
+function startHardMode() { startGameMode('Hard') }
+function startExtremeMode() { startGameMode('Extreme') }
 
 function startGame() {
     myGamePiece = new component(87.5, 52.5, rocketImage, 500, (window.innerHeight / 2) - 30, "image");
     myGameArea.start();
+    checkPauseToggle(); // Start listening for pause toggle
 }
 
 function tryAgain() {
@@ -83,22 +103,22 @@ function tryAgain() {
     level = 1;
     score = 0;
 
-    if (mode === "normal") {
+    if (mode === "Normal") {
         amount = 150;
         maxSize = 40;
         obstacleSpeed = 1.2;
     }
-    else if (mode === "hard") {
+    else if (mode === "Hard") {
         amount = 100;
         maxSize = 60;
         obstacleSpeed = 1.5;
     }
-    else if (mode === "endless") {
+    else if (mode === "Extreme") {
         amount = 60;
         maxSize = 80;
         obstacleSpeed = 1.8;
     }
-    levelHtml.innerHTML = `Level ${level}`;
+    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
     levelPopUpHtml.hidden = true;
     scoreHtml.innerHTML = `Score: 0`;
     myObstacles = [];
@@ -107,13 +127,15 @@ function tryAgain() {
     startGame();
     tryAgainButton.hidden = true;
     backButton.hidden = true;
+    finalScoreText.hidden = true
 }
 function back() {
     deathOverlay.style.opacity = "0";
     deathOverlay.style.pointerEvents = "none";
     level = 1;
     score = 0;
-    levelHtml.innerHTML = `Level ${level}`;
+    isGameOver = false;
+    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
     levelPopUpHtml.hidden = true;
     levelHtml.hidden = true;
     scoreHtml.hidden = true;
@@ -130,24 +152,28 @@ function back() {
         scoreHtml.style.color = "white"
         maxScoreHtml.style.color = "white"
     }, 200); // slight delay to allow reflow and trigger transition    
+    finalScoreText.hidden = true
 }
 
 function gameOver() {
+    paused = false;
     myGameArea.stop();
     isGameOver = true;
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
-    // sonicboom.currentTime = 1.78;
-    // sonicboom.play();
     try {
         deathSound.currentTime = 1.45;
         deathSound.play();
     } catch (e) {
         console.warn("Death sound blocked or failed:", e);
     }
-    document.getElementById("finalScoreText").innerText = `Score: ${score}`;
+    finalScoreText.innerText = `Score: ${score}`;
+    finalScoreText.hidden = false
     deathOverlay.style.opacity = "1";
     deathOverlay.style.pointerEvents = "auto";
+    pauseOverlay.classList.remove("visible");
+    pauseOverlay.style.opacity = "0";
+    pauseOverlay.style.pointerEvents = "none";
     tryAgainButton.hidden = false;
     backButton.hidden = false;
 
@@ -155,20 +181,26 @@ function gameOver() {
 
     if (score > maxScore) maxScore = score;
     maxScoreHtml.innerHTML = `Max Score: ${maxScore}`;
-
 }
 
-function togglePause() {
-    isPaused = !isPaused;
-    if (isPaused) {
-        deathOverlay.style.opacity = "1";
-        deathOverlay.style.pointerEvents = "auto";
-        clearInterval(myGameArea.interval);
-    } else {
-        deathOverlay.style.opacity = "0";
-        deathOverlay.style.pointerEvents = "none";
-        myGameArea.interval = setInterval(updateGameArea, 5);
+function checkPauseToggle() {
+    if (!isGameOver && myGameArea.keys && myGameArea.keys.hasOwnProperty("p") && myGameArea.keys["p"] && !pPressed) {
+        paused = !paused;
+        pPressed = true;
+        // Toggle overlay visibility
+        pauseOverlay.classList.toggle("visible", paused && !isGameOver);
+        pauseOverlay.style.opacity = paused ? "1" : "0";
+        pauseOverlay.style.pointerEvents = paused ? "auto" : "none";
+        if (paused) {
+            clearInterval(myGameArea.interval);
+        } else {
+            myGameArea.interval = setInterval(updateGameArea, 5);
+        }
     }
+    if (myGameArea.keys && !myGameArea.keys["p"]) {
+        pPressed = false;
+    }
+    requestAnimationFrame(checkPauseToggle);
 }
 
 function randomNum(max, min) {
@@ -187,9 +219,9 @@ const myGameArea = {
         window.addEventListener('keydown', function (e) {
             myGameArea.keys = myGameArea.keys || {};
             myGameArea.keys[e.key] = true;
-            if (e.key === "Escape") {togglePause();}
         });
         window.addEventListener('keyup', function (e) {
+            myGameArea.keys = myGameArea.keys || {};
             myGameArea.keys[e.key] = false;
         });
     },
@@ -348,9 +380,9 @@ function updateGameArea() {
 
     // Define boundaries dynamically based on game piece size and canvas size
     const leftBoundary = 0 + boundaryPaddingX;
-    const topBoundary = 0 + boundaryPaddingY-8;
-    const rightBoundary = myGameArea.canvas.width - myGamePiece.width - boundaryPaddingX+5;
-    const bottomBoundary = myGameArea.canvas.height - myGamePiece.height - boundaryPaddingY+8;
+    const topBoundary = 0 + boundaryPaddingY - 8;
+    const rightBoundary = myGameArea.canvas.width - myGamePiece.width - boundaryPaddingX + 5;
+    const bottomBoundary = myGameArea.canvas.height - myGamePiece.height - boundaryPaddingY + 8;
     // Boundaries conditions using dynamic boundaries
     if (myGamePiece.x <= leftBoundary) {
         myGamePiece.speedX = 0;
@@ -368,26 +400,6 @@ function updateGameArea() {
         myGamePiece.speedX = -0.6;
         myGamePiece.x = rightBoundary;
     }
-    // //Left
-    // if (myGamePiece.x <= -22) {
-    //     myGamePiece.speedX = 0;
-    //     myGamePiece.x = -22;
-    // }
-    // //Top
-    // if (myGamePiece.y <= -11) {
-    //     myGamePiece.speedY = 0;
-    //     myGamePiece.y = -11;
-    // }
-    // //Bottom
-    // if (myGamePiece.y >= myGameArea.canvas.height - lengthOfPiece + 11) {
-    //     myGamePiece.speedY = 0;
-    //     myGamePiece.y = myGameArea.canvas.height - lengthOfPiece + 11;
-    // }
-    // // Right
-    // if (myGamePiece.x >= myGameArea.canvas.width - lengthOfPiece - 28) {
-    //     myGamePiece.speedX = -0.6;
-    //     myGamePiece.x = myGameArea.canvas.width - lengthOfPiece - 28;
-    // }
 
     // Crash detection
     for (let i = 0; i < myObstacles.length; i++) {
@@ -412,12 +424,13 @@ function updateGameArea() {
     // Level change logic
     if (everyinterval(difficultyRampInterval) && myGameArea.frameNo !== 0) {
         level++;
-        levelHtml.innerHTML = `Level ${level}`;
+        levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
         levelPopUpHtml.innerHTML = `Level ${level}`;
         levelPopUpHtml.hidden = false;
+        levelPopUpHtml.classList.add("visible");
         setTimeout(() => {
-            levelPopUpHtml.hidden = true;
-        }, 750);
+            levelPopUpHtml.classList.remove("visible");
+        }, 1000);
         if (amount > 30) amount -= 5;
         if (maxSize < 100) maxSize += 3;
         obstacleSpeed += 0.2; // increase movement speed
@@ -466,10 +479,11 @@ function updateGameArea() {
     if (keys["ArrowLeft"] || keys["a"]) myGamePiece.speedX -= 2;
     if (keys["ArrowDown"] || keys["s"]) myGamePiece.speedY += 1.5;
     if (keys["ArrowRight"] || keys["d"]) myGamePiece.speedX += 2;
-    if (keys["z"] && keys["x"]) {if (!zxPressed) {coinSound.currentTime = 0.2; coinSound.play(); zxPressed = true;}myGamePiece.speedX += 1.5;} else {zxPressed = false;}
+    if (keys["z"] && keys["x"]) { if (!zxPressed) { coinSound.currentTime = 0.2; coinSound.play(); zxPressed = true; } myGamePiece.speedX += 1.5; } else { zxPressed = false; }
+    if (keys["r"]) {gameOver(); tryAgain();}
     if (keys["h"] && !hPressed) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; hPressed = true; }
     if (!keys["h"]) hPressed = false;
-
+    if (paused) return;
     myGamePiece.newPos();
     myGamePiece.update();
 }
