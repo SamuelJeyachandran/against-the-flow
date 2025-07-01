@@ -32,5 +32,28 @@
     <button hidden id="tryagain" onclick="tryAgain()">Try Again</button>
     <button hidden id="back" onclick="back()">Back</button>
     <script src="script.js"></script>
+    <!-- <script>
+        (function(h,o,u,n,d) {
+          h=h[d]=h[d]||{q:[],onReady:function(c){h.q.push(c)}}
+          d=o.createElement(u);d.async=1;d.src=n
+          n=o.getElementsByTagName(u)[0];n.parentNode.insertBefore(d,n)
+        })(window,document,'script','https://www.datadoghq-browser-agent.com/us5/v6/datadog-rum.js','DD_RUM')
+        window.DD_RUM.onReady(function() {
+          window.DD_RUM.init({
+            clientToken: 'pubbe5fca082bac1938ad9d7015d6907985',
+            applicationId: 'c54df16f-0cf8-4831-b391-5c968aaebbf8',
+            // `site` refers to the Datadog site parameter of your organization
+            // see https://docs.datadoghq.com/getting_started/site/
+            site: 'us5.datadoghq.com',
+            service: 'against-the-flow',
+            env: 'prod',
+            // Specify a version number to identify the deployed version of your application in Datadog
+            // version: '1.0.0',
+            sessionSampleRate: 100,
+            sessionReplaySampleRate: 100,
+            defaultPrivacyLevel: 'allow',
+          });
+        })
+      </script> -->
 </body>
 </html>

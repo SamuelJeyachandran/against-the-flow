@@ -7,19 +7,24 @@ const difficultyRampInterval = 1500; // frames
 const coinColor = "gold";
 let score = 0;
 let maxScore = 0;
-let amount = 150;
-let maxSize = 40;
+let amount;
+let maxSize;
+let obstacleSpeed;
 let level = 1;
-let obstacleSpeed = 1.2;
 let mode = ""
 let pPressed = false;
 let paused = false;
 let hitboxesShown = false
 let hPressed = false;
+let fPressed = false
 let zxPressed = false;
 let toggledCredits = false;
 let lastTime = 0;
-let gameState = 'menu'; // 'menu', 'playing', 'paused', 'gameOver'
+let lastHitboxToggle = 0;
+let lastFire = 0;
+let lastRestartPress = 0;
+let friction = 1; // AI said to put it at 0.9 but I dont want any friction
+// let gameState = 'menu'; // 'menu', 'playing', 'paused', 'gameOver'
 function gameLoop(timestamp) {
     if (!lastTime) lastTime = timestamp;
     const delta = timestamp - lastTime;
@@ -56,14 +61,16 @@ pauseOverlay.classList.remove("visible");
 pauseOverlay.style.opacity = "0";
 pauseOverlay.style.pointerEvents = "none";
 
-function startGameMode(modef) {
-    const settings = {
-        Normal: { amount: 150, maxSize: 40, obstacleSpeed: 1.2 },
-        Hard: { amount: 100, maxSize: 60, obstacleSpeed: 1.5 },
-        Extreme: { amount: 60, maxSize: 80, obstacleSpeed: 1.8 }
-    };
+const settings = {
+    Normal: { amount: 150, maxSize: 40, obstacleSpeed: 1.2 },
+    Hard: { amount: 100, maxSize: 60, obstacleSpeed: 1.5 },
+    Extreme: { amount: 60, maxSize: 80, obstacleSpeed: 1.8 }
+};
 
-    const { amount, maxSize, obstacleSpeed } = settings[modef];
+function startGameMode(modef) {
+    amount = settings[modef].amount;
+    maxSize = settings[modef].maxSize;
+    obstacleSpeed = settings[modef].obstacleSpeed;
     mode = modef;
     hideMenuAndStart(startGame);
 }
@@ -91,33 +98,21 @@ function startGame() {
     myGamePiece = new component(87.5, 52.5, rocketImage, 500, (window.innerHeight / 2) - 30, "image");
     myGameArea.start();
     checkPauseToggle(); // Start listening for pause toggle
+    console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", friction);
 }
 
 function tryAgain() {
-    levelHtml.style.color = "white"
-    scoreHtml.style.color = "white"
-    maxScoreHtml.style.color = "white"
+    levelHtml.style.color = scoreHtml.style.color = maxScoreHtml.style.color = "white";
     deathOverlay.style.opacity = "0";
     deathOverlay.style.pointerEvents = "none";
     isGameOver = false;
     level = 1;
     score = 0;
 
-    if (mode === "Normal") {
-        amount = 150;
-        maxSize = 40;
-        obstacleSpeed = 1.2;
-    }
-    else if (mode === "Hard") {
-        amount = 100;
-        maxSize = 60;
-        obstacleSpeed = 1.5;
-    }
-    else if (mode === "Extreme") {
-        amount = 60;
-        maxSize = 80;
-        obstacleSpeed = 1.8;
-    }
+    amount = settings[mode].amount;
+    maxSize = settings[mode].maxSize;
+    obstacleSpeed = settings[mode].obstacleSpeed;
+
     levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
     levelPopUpHtml.hidden = true;
     scoreHtml.innerHTML = `Score: 0`;
@@ -148,9 +143,7 @@ function back() {
         menu.classList.remove("hidden"); // fade in smoothly
         tryAgainButton.hidden = true;
         backButton.hidden = true;
-        levelHtml.style.color = "white"
-        scoreHtml.style.color = "white"
-        maxScoreHtml.style.color = "white"
+        levelHtml.style.color = scoreHtml.style.color = maxScoreHtml.style.color = "white";
     }, 200); // slight delay to allow reflow and trigger transition    
     finalScoreText.hidden = true
 }
@@ -420,7 +413,6 @@ function updateGameArea() {
             break;
         }
     }
-
     // Level change logic
     if (everyinterval(difficultyRampInterval) && myGameArea.frameNo !== 0) {
         level++;
@@ -431,9 +423,12 @@ function updateGameArea() {
         setTimeout(() => {
             levelPopUpHtml.classList.remove("visible");
         }, 1000);
-        if (amount > 30) amount -= 5;
-        if (maxSize < 100) maxSize += 3;
-        obstacleSpeed += 0.2; // increase movement speed
+        
+        if (amount > 20) amount -= 20;
+        if (maxSize < 200) maxSize += 3;
+        obstacleSpeed += 0.3; // increase obstacle movement speed
+        friction += 0.1; // increase player movement speed
+        console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", friction);
     }
 
     // Create obstacle
@@ -468,7 +463,7 @@ function updateGameArea() {
 
     // Update coins
     myCoins.forEach((coin) => {
-        coin.x -= obstacleSpeed - 0.3;
+        coin.x -= obstacleSpeed - 0.4;
         coin.update();
     });
     myCoins = myCoins.filter(c => c.x + c.width > 0);
@@ -481,9 +476,14 @@ function updateGameArea() {
     if (keys["ArrowRight"] || keys["d"]) myGamePiece.speedX += 2;
     if (keys["z"] && keys["x"]) { if (!zxPressed) { coinSound.currentTime = 0.2; coinSound.play(); zxPressed = true; } myGamePiece.speedX += 1.5; } else { zxPressed = false; }
     if (keys["r"]) {gameOver(); tryAgain();}
-    if (keys["h"] && !hPressed) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; hPressed = true; }
+    if (keys["b"]) {console.log("Hi");};
+    if (keys["h"] && !hPressed && Date.now() - lastHitboxToggle > 300) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; hPressed = true; lastHitboxToggle = Date.now();}
     if (!keys["h"]) hPressed = false;
+    if (keys["f"] && !fPressed && Date.now() - lastFire > 300) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; fPressed = true; lastFire = Date.now();}
+    if (!keys["f"]) fPressed = false;
     if (paused) return;
+    myGamePiece.speedX *= friction;
+    myGamePiece.speedY *= friction; 
     myGamePiece.newPos();
     myGamePiece.update();
 }
