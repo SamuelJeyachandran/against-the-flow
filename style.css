@@ -62,7 +62,7 @@ canvas {
 #score,
 #maxScore,
 #level,
-#levelPopUp, #finalScoreText {
+#levelPopUp {
     position: absolute;
     z-index: 20;
     color: rgb(255, 255, 255);
@@ -95,11 +95,19 @@ canvas {
     opacity: 1;
 }
 
-#finalScoreText {
-    top: 35%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: fadeInUp 0.5s ease;
+#pauseButton {
+  position: fixed;
+  top: 750px;
+  right: 18px;
+  padding: 10px 16px;
+  background-color: #3399ff;
+  border:#000000;
+  border-width: 2px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 101;
 }
 
 #deathOverlay {
@@ -115,6 +123,87 @@ canvas {
     pointer-events: none;
     transition: opacity 0.5s ease;
 }
+
+.overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+.overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pause-wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px; /* Equal spacing between all items */
+}
+
+#gamePaused {
+    font-size: 50px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    animation: fadeInUp 0.5s ease;
+    z-index: 101;
+}
+
+.pause-wrapper button {
+    width: 180px;
+    height: 75px;
+    font-size: 30px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.5s ease;
+}
+
+#resumeBtn {
+    background-color: #ffffff;
+    color: black;
+}
+
+#resumeBtn:hover {
+    background-color: #dddddd;
+    transform: scale(1.05);
+}
+
+#tryAgainPauseBtn {
+    background-color: #bf2f2c;
+    color: white;
+}
+
+#tryAgainPauseBtn:hover {
+    background-color: #921c1c;
+    transform: scale(1.05);
+}
+
+#backPauseBtn {
+    background-color: #484848;
+    color: white;
+}
+
+#backPauseBtn:hover {
+    background-color: #363636;
+    transform: scale(1.05);
+}
+
 #pauseOverlay {
     position: fixed;
     top: 0;
@@ -167,9 +256,7 @@ h1 {
 }
 
 /* === Buttons (Common Style Base) === */
-.start,
-#tryagain,
-#back,#finalScoreText {
+.start,#tryagain,#back {
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -195,42 +282,109 @@ h1 {
     transform: translate(-50%, -50%) scale(1.05);
 }
 
-/* === Try Again Button === */
+.gameover-wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 101;
+    display: none; /* Start hidden */
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.gameover-wrapper.visible {
+    display: flex; /* Show when visible */
+}
+
+/* Game Over title (same style as Game Paused) */
+#gameOverTitle {
+    font-size: 50px;
+    font-weight: bold;
+    color: white;
+    /* animation: fadeInUp 0.5s ease; */
+    margin: 0;
+}
+
+/* Score text styling */
+#finalScoreText {
+    font-size: 20px;
+    color: white;
+    margin: 0;
+}
+
+/* Try Again button (already styled, but just in case) */
 #tryagain {
     background-color: #bf2f2c;
-    width: 225px;
-    height: 100px;
-    font-size: 40px;
-    position: fixed;
-    top: 48%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: fadeInUp 0.6s ease;
+    width: 200px;
+    height: 80px;
+    font-size: 32px;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
 }
-
 #tryagain:hover {
     background-color: #921c1c;
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: scale(1.05);
 }
 
-/* === Back Button === */
+/* Back button */
 #back {
     background-color: #484848;
-    width: 150px;
+    width: 200px;
     height: 80px;
-    font-size: 30px;
-    text-align: center;
-    position: fixed;
-    top: 60%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: fadeInUp 0.6s ease;
+    font-size: 32px;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
 }
-
 #back:hover {
     background-color: #363636;
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: scale(1.05);
 }
+
+/* #splashText {
+    position: relative;
+    top: 20%;
+    left: 50%;
+    animation: splash 0.4s ease;
+    transform: translate(-50%, -50%);
+} */
+@keyframes example {
+    0%   {left:-200px; top:-200px;}
+    25%  {left:200px; top:-200px;}
+    50%  {left:200px; top:200px;}
+    75%  {left:-200px; top:200px;}
+    100% {left:-200px; top:-200px;}
+  }
+  @keyframes another {
+    0%   {transform: rotate(-20deg);}
+    12.5%  {transform: rotate(-10deg);}
+    25%  {transform: rotate(0deg);}
+    37.5%  {transform: rotate(10deg);}
+    50% {transform: rotate(20deg);}
+    62.5%  {transform: rotate(10deg);}
+    75%  {transform: rotate(0deg);}
+    87.5%  {transform: rotate(-10deg);}
+    100% {transform: rotate(-20deg);}
+  }
+  
+  /* The element to apply the animation to */
+  #splashText {
+    left:0px; top:-200px;
+    transform: rotate(-30deg);
+    position: relative;
+    /* animation-name: another;
+    animation-duration: 2s;
+    animation-iteration-count: infinite; */
+    animation: another 2s infinite ease-in-out;
+  }
 
 /* === Credits Section === */
 #creditsButton {
@@ -258,7 +412,7 @@ h1 {
 #creditClose {
     background-color: #696969;
     font-size: 15px;
-    padding: 10px 20px;
+    padding: 8px 16px;
 }
 
 /* === Button Placement === */
@@ -272,4 +426,41 @@ h1 {
 
 #startExtremeMode {
     top: 58%;
+}
+
+#bulletSlotWrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border: 3px solid #999;
+  border-radius: 10px;
+  background-color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 101;
+}
+
+#bulletSlot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: gray;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+#bulletSlot.locked {
+  animation: shake 0.4s ease;
+  background-color: red !important;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
 }

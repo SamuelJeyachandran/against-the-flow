@@ -10,10 +10,21 @@
 
 <body>
     <div id="deathOverlay"></div>
-    <div id="pauseOverlay"></div>
+
+    <div id="pauseOverlay">
+      <div class="pause-wrapper">
+        <div id="gamePaused">Game Paused</div>
+        <button id="resumeBtn">Resume</button>
+        <button id="tryAgainPauseBtn">Try Again</button>
+        <button id="backPauseBtn">Back</button>
+      </div>
+    </div>    
+
     <div id="menu">
         <div id="menuContent">
             <h1 id="title"> Against the Flow</h1>
+            <p id="splashText">Press F to fire a bullet!!!</p>
+            <!-- <p id="splashText">Press P to Pause!!!</p> -->
             <button class="start" id="startNormalMode" onclick="startNormalMode()">Start Normal Mode</button>
             <button class="start" id="startHardMode" onclick="startHardMode()">Start Hard Mode</button>
             <button class="start" id="startExtremeMode" onclick="startExtremeMode()">Start Extreme Mode</button>
@@ -24,13 +35,20 @@
             </div>
         </div>
     </div>
-    <h4 hidden id="maxScore">Max Score: 0</h4>
+    <h4 hidden id="maxScore">High Score: 0</h4>
     <h4 hidden id="score">Score: 0</h4>
     <h2 hidden id="level">Level 1</h2>
     <h1 hidden id="levelPopUp">Level 1</h1>
-    <h2 id="finalScoreText"></h2>
-    <button hidden id="tryagain" onclick="tryAgain()">Try Again</button>
-    <button hidden id="back" onclick="back()">Back</button>
+    <div id="gameover-wrapper" class="gameover-wrapper">
+      <h2 id="gameOverTitle">Game Over</h2>
+      <h2 id="finalScoreText"></h2>
+      <button id="tryagain" onclick="tryAgain()">Try Again</button>
+      <button id="back" onclick="back()">Back</button>
+    </div>
+    <!-- <button hidden id="pauseButton">⏸ Pause</button> -->
+    <!-- <div id="bulletSlotWrapper">
+      <div id="bulletSlot"></div>
+    </div> -->
     <script src="script.js"></script>
     <!-- <script>
         (function(h,o,u,n,d) {

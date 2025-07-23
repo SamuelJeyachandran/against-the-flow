@@ -1,36 +1,123 @@
 let myGamePiece;
 let myObstacles = [];
 let myCoins = [];
-let isGameOver = false;
-const lengthOfPiece = 60;
+let myBullets = [];
+let debrisParticles = [];
+
+const bulletTypes = [
+    {
+      name: "Normal",
+      color: "red",
+      speed: 9,
+      damage: 1,
+      fireRate: 800, // milliseconds between shots
+      unlocked: true
+    },
+    {
+      name: "Fast",
+      color: "cyan",
+      speed: 16,
+      damage: 1,
+      fireRate: 600,
+      cost: 5,
+      levelRequired: 2,
+      unlocked: false
+    },
+    {
+      name: "Explosive",
+      color: "orange",
+      speed: 6,
+      damage: 3,
+      fireRate: 1200,
+      cost: 10,
+      splash: true,
+      levelRequired: 3,
+      unlocked: false
+    },
+    {
+      name: "Laser",
+      color: "magenta",
+      speed: 15,
+      damage: 5,
+      fireRate: 200,
+      cost: 25,
+      levelRequired: 5,
+      unlocked: false
+    }
+];  
+
+let unlockedBullets = []; // Only "Normal" bullet unlocked initially
+let currentBulletIndex = 0;
+
+class DebrisParticle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.radius = Math.random() * 3 + 1;
+        this.color = color || "gray";
+        this.velocity = {
+            x: ((Math.random() - 0.3) * 8)*Math.random()*2,
+            y: (Math.random() - 0.5) * 4
+        };
+        this.alpha = 5;
+        this.decay = 0.02 + Math.random() * 0.05;
+    }
+
+    update() {
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+        this.alpha -= this.decay;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    isAlive() {
+        return this.alpha > 0;
+    }
+}
+
 const difficultyRampInterval = 1500; // frames
 const coinColor = "gold";
-let score = 0;
-let maxScore = 0;
-let amount;
-let maxSize;
-let obstacleSpeed;
-let level = 1;
-let mode = ""
-let pPressed = false;
-let paused = false;
-let hitboxesShown = false
-let hPressed = false;
-let fPressed = false
-let zxPressed = false;
-let toggledCredits = false;
-let lastTime = 0;
-let lastHitboxToggle = 0;
-let lastFire = 0;
-let lastRestartPress = 0;
-let friction = 1; // AI said to put it at 0.9 but I dont want any friction
-// let gameState = 'menu'; // 'menu', 'playing', 'paused', 'gameOver'
+// const boundaryPadding = { x: 0, y: 0 };
+const playerStartX = 500;
+const playerStartY = (window.innerHeight / 2) - 30;
+const playerWidth = 87.5;
+const playerHeight = 52.5;
+const GameState = {
+    score: 0,
+    maxScore: 0,
+    level: 1,
+    paused: false,
+    isGameOver: false,
+    hitboxesShown: false,
+    zxPressed: false,
+    pPressed: false,
+    hPressed: false,
+    fPressed: false,
+    toggledCredits: false,
+    lastTime: 0,
+    lastHitboxToggle: 0,
+    lastFire: Date.now(),
+    lastRestartPress: 0,
+    friction: 1  // 0.9? no
+};
+
 function gameLoop(timestamp) {
-    if (!lastTime) lastTime = timestamp;
-    const delta = timestamp - lastTime;
-    lastTime = timestamp;
-    updateGameArea(delta);
-    if (!paused && !isGameOver) {
+    if (!GameState.lastTime) GameState.lastTime = timestamp;
+    const delta = timestamp - GameState.lastTime;
+    GameState.lastTime = timestamp;
+    GameState.elapsedTime += delta;
+
+    if (!GameState.paused && !GameState.isGameOver) {
+        updateGameArea(delta);
         requestAnimationFrame(gameLoop);
     }
 }
@@ -38,25 +125,29 @@ const coinSound = new Audio("/sounds/coin_collect.mp3");
 const sonicboom = new Audio("/sounds/plane_sonicboom.mp3");
 const deathSound = new Audio("/sounds/videogame-death-sound.mp3");
 
-const rocketImage = new Image();
-rocketImage.src = "images/rocketship.png";  // Use your rocket image path
+let rocketImage = new Image();
+rocketImage.src = "images/rocketship.png";
+
+let rocketImage2 = new Image();
+rocketImage2.src = "images/rocketship2.png";
 
 const asteroidImage = new Image();
-asteroidImage.src = "images/asteroid.png";  // Use your asteroid image path
+asteroidImage.src = "images/asteroid.png";
 
 coinSound.preload = "auto";
 sonicboom.preload = "auto";
 deathSound.preload = "auto";
 const menu = document.getElementById("menu")
-const tryAgainButton = document.getElementById("tryagain");
-const backButton = document.getElementById("back")
 const scoreHtml = document.getElementById("score");
 const maxScoreHtml = document.getElementById("maxScore");
 const levelHtml = document.getElementById("level");
+// const pauseButton = document.getElementById("pauseButton")
 const levelPopUpHtml = document.getElementById("levelPopUp");
 const deathOverlay = document.getElementById("deathOverlay")
 const pauseOverlay = document.getElementById("pauseOverlay")
-const finalScoreText = document.getElementById("finalScoreText")
+const resumeBtn = document.getElementById("resumeBtn");
+const tryAgainPauseBtn = document.getElementById("tryAgainPauseBtn");
+const backPauseBtn = document.getElementById("backPauseBtn");
 pauseOverlay.classList.remove("visible");
 pauseOverlay.style.opacity = "0";
 pauseOverlay.style.pointerEvents = "none";
@@ -72,13 +163,15 @@ function startGameMode(modef) {
     maxSize = settings[modef].maxSize;
     obstacleSpeed = settings[modef].obstacleSpeed;
     mode = modef;
+    friction = 1
     hideMenuAndStart(startGame);
 }
 
 function hideMenuAndStart(callback) {
     scoreHtml.hidden = false
     maxScoreHtml.hidden = false
-    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
+    // pauseButton.hidden = false
+    levelHtml.innerHTML = `Level ${GameState.level} (${mode} mode)`;
     levelHtml.hidden = false
     menu.classList.add("hidden");
     callback(); // Start the game
@@ -87,7 +180,7 @@ function hideMenuAndStart(callback) {
     }, 500); // match the transition duration
 }
 
-function toggleCredits() { if (toggledCredits) { document.getElementById("credits").style.display = "none"; } else { document.getElementById("credits").style.display = "block"; } toggledCredits = !toggledCredits }
+function toggleCredits() { if (GameState.toggledCredits) { document.getElementById("credits").style.display = "none"; } else { document.getElementById("credits").style.display = "block"; } GameState.toggledCredits = !GameState.toggledCredits }
 function hideCredits() { document.getElementById("credits").style.display = "none"; }
 
 function startNormalMode() { startGameMode('Normal') }
@@ -95,63 +188,67 @@ function startHardMode() { startGameMode('Hard') }
 function startExtremeMode() { startGameMode('Extreme') }
 
 function startGame() {
-    myGamePiece = new component(87.5, 52.5, rocketImage, 500, (window.innerHeight / 2) - 30, "image");
+    GameState.isGameOver = false;
+    myGamePiece = new component(playerWidth, playerHeight, rocketImage2, playerStartX, playerStartY, "image");
     myGameArea.start();
     checkPauseToggle(); // Start listening for pause toggle
-    console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", friction);
+    console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", GameState.friction);
 }
 
 function tryAgain() {
-    levelHtml.style.color = scoreHtml.style.color = maxScoreHtml.style.color = "white";
+    // pauseButton.hidden = false;
     deathOverlay.style.opacity = "0";
     deathOverlay.style.pointerEvents = "none";
-    isGameOver = false;
-    level = 1;
-    score = 0;
+
+    GameState.isGameOver = false;
+    GameState.level = 1;
+    GameState.score = 0;
 
     amount = settings[mode].amount;
     maxSize = settings[mode].maxSize;
     obstacleSpeed = settings[mode].obstacleSpeed;
+    GameState.friction = 1;
 
-    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
+    levelHtml.innerHTML = `Level ${GameState.level} (${mode} mode)`;
     levelPopUpHtml.hidden = true;
     scoreHtml.innerHTML = `Score: 0`;
     myObstacles = [];
     myCoins = [];
-
+    myBullets = [];
+    debrisParticles = [];
     startGame();
-    tryAgainButton.hidden = true;
-    backButton.hidden = true;
-    finalScoreText.hidden = true
+    hideGameOverScreen()
 }
 function back() {
     deathOverlay.style.opacity = "0";
     deathOverlay.style.pointerEvents = "none";
-    level = 1;
-    score = 0;
-    isGameOver = false;
-    levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
+    GameState.level = 1;
+    GameState.score = 0;
+    GameState.isGameOver = true;
+    levelHtml.innerHTML = `Level ${GameState.level} (${mode} mode)`;
     levelPopUpHtml.hidden = true;
     levelHtml.hidden = true;
     scoreHtml.hidden = true;
     maxScoreHtml.hidden = true;
+    // pauseButton.hidden = true;
     scoreHtml.innerHTML = `Score: 0`;
     myObstacles = [];
     myCoins = [];
+    myBullets = [];
+    debrisParticles = [];
     menu.style.display = "flex"; // or 'block'
     setTimeout(() => {
         menu.classList.remove("hidden"); // fade in smoothly
-        tryAgainButton.hidden = true;
-        backButton.hidden = true;
+        hideGameOverScreen()
         levelHtml.style.color = scoreHtml.style.color = maxScoreHtml.style.color = "white";
     }, 200); // slight delay to allow reflow and trigger transition    
-    finalScoreText.hidden = true
 }
 
 function gameOver() {
-    paused = false;
+    console.log("You Died");
+    GameState.paused = false;
     myGameArea.stop();
-    isGameOver = true;
+    GameState.isGameOver = true;
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
     try {
@@ -160,38 +257,129 @@ function gameOver() {
     } catch (e) {
         console.warn("Death sound blocked or failed:", e);
     }
-    finalScoreText.innerText = `Score: ${score}`;
-    finalScoreText.hidden = false
     deathOverlay.style.opacity = "1";
     deathOverlay.style.pointerEvents = "auto";
     pauseOverlay.classList.remove("visible");
     pauseOverlay.style.opacity = "0";
     pauseOverlay.style.pointerEvents = "none";
-    tryAgainButton.hidden = false;
-    backButton.hidden = false;
 
-    levelHtml.style.color = scoreHtml.style.color = maxScoreHtml.style.color = "white";
+    showGameOverScreen(GameState.score)
+    // pauseButton.hidden = true;
 
-    if (score > maxScore) maxScore = score;
-    maxScoreHtml.innerHTML = `Max Score: ${maxScore}`;
+    if (GameState.score > GameState.maxScore) GameState.maxScore = GameState.score;
+    maxScoreHtml.innerHTML = `High Score: ${GameState.maxScore}`;
 }
 
-function checkPauseToggle() {
-    if (!isGameOver && myGameArea.keys && myGameArea.keys.hasOwnProperty("p") && myGameArea.keys["p"] && !pPressed) {
-        paused = !paused;
-        pPressed = true;
-        // Toggle overlay visibility
-        pauseOverlay.classList.toggle("visible", paused && !isGameOver);
-        pauseOverlay.style.opacity = paused ? "1" : "0";
-        pauseOverlay.style.pointerEvents = paused ? "auto" : "none";
-        if (paused) {
-            clearInterval(myGameArea.interval);
+function showGameOverScreen(score) {
+    const wrapper = document.getElementById("gameover-wrapper");
+    const scoreText = document.getElementById("finalScoreText");
+    scoreText.textContent = `Final Score: ${score}`;
+    wrapper.classList.add("visible");
+}
+
+function hideGameOverScreen() {
+    document.getElementById("gameover-wrapper").classList.remove("visible");
+}
+
+function fireBullet() {
+    const bulletType = bulletTypes[currentBulletIndex];
+    
+    const currentBullet = {
+        x: myGamePiece.x + myGamePiece.width - 24,
+        y: myGamePiece.y + myGamePiece.height / 2 - 7,
+        width: 35,
+        height: 12,
+        speed: bulletType.speed,
+        color: bulletType.color,
+        damage: bulletType.damage
+      };
+    const bullet = new component(currentBullet.width, currentBullet.height, currentBullet.color, currentBullet.x, currentBullet.y, "rect");
+    bullet.speedX = currentBullet.speed;
+    myBullets.push(bullet);
+    GameState.lastFire = GameState.elapsedTime;
+}
+
+function switchBullet(direction) {
+    // updateBulletSlotUI();
+    let newIndex = currentBulletIndex;
+  
+    for (let i = 0; i < bulletTypes.length; i++) {
+        newIndex = (newIndex + direction + bulletTypes.length) % bulletTypes.length;
+        if (bulletTypes[newIndex].unlocked) {
+            currentBulletIndex = newIndex;
+            // playBulletSwitchEffect();
+            return;
         } else {
-            myGameArea.interval = setInterval(updateGameArea, 5);
+            // playLockedBulletAnimation(); // if locked
+            return;
+        }
+    }
+}  
+
+resumeBtn.onclick = function () {
+    GameState.paused = !GameState.paused;
+    pauseOverlay.classList.toggle("visible", true);
+    pauseOverlay.style.opacity =  "0";
+    pauseOverlay.style.pointerEvents = "auto";
+    GameState.lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+};
+
+tryAgainPauseBtn.onclick = function () {
+    GameState.paused = !GameState.paused;
+    pauseOverlay.classList.remove("visible");
+    pauseOverlay.style.opacity =  "0";
+    pauseOverlay.style.pointerEvents = "auto";
+    gameOver();
+    tryAgain();
+};
+
+backPauseBtn.onclick = function () {
+    GameState.paused = !GameState.paused;
+    pauseOverlay.classList.remove("visible");
+    pauseOverlay.style.opacity = "0";
+    pauseOverlay.style.pointerEvents = "none";
+    gameOver();
+    back();
+};
+
+// pauseButton.addEventListener("click", () => {
+//     GameState.paused = !GameState.paused;
+  
+//     // Optional: Show or hide pause overlay text/buttons
+//     const isPaused = GameState.paused;
+//     document.getElementById("pauseOverlayWrapper")?.classList.toggle("show", isPaused);
+
+//     pauseOverlay.classList.toggle("visible", GameState.paused);
+//     pauseOverlay.style.opacity = GameState.paused ? "1" : "0";
+//     pauseOverlay.style.pointerEvents = GameState.paused ? "auto" : "none";
+//     if (GameState.paused) {
+//         pauseButton.textContent = "▶ Play⏸"; // Play icon
+//       } else {
+//         pauseButton.textContent = "⏸ Pause"; // Pause icon
+//       }
+//     if (!GameState.paused) {
+//         GameState.lastTime = performance.now(); // Reset animation timer
+//         requestAnimationFrame(gameLoop);
+//     }
+// });
+
+function checkPauseToggle() {
+    if (!GameState.isGameOver && myGameArea.keys && myGameArea.keys.hasOwnProperty("p") && myGameArea.keys["p"] && !GameState.pPressed) {
+        GameState.paused = !GameState.paused;
+        GameState.pPressed = true;
+
+        pauseOverlay.classList.toggle("visible", GameState.paused);
+        pauseOverlay.style.opacity = GameState.paused ? "1" : "0";
+        pauseOverlay.style.pointerEvents = GameState.paused ? "auto" : "none";
+
+        if (!GameState.paused) {
+            GameState.lastTime = performance.now(); // Reset animation timer
+            requestAnimationFrame(gameLoop);
         }
     }
     if (myGameArea.keys && !myGameArea.keys["p"]) {
-        pPressed = false;
+        GameState.pPressed = false;
     }
     requestAnimationFrame(checkPauseToggle);
 }
@@ -216,7 +404,7 @@ const myGameArea = {
         window.addEventListener('keyup', function (e) {
             myGameArea.keys = myGameArea.keys || {};
             myGameArea.keys[e.key] = false;
-        });
+        });         
     },
     clear: function () {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -278,11 +466,19 @@ function component(width, height, color, x, y, type = "rect") {
 
         } else if (this.type === "image" && this.color instanceof Image) {
             // Draw image
-            if (hitboxesShown) {
+            if (GameState.hitboxesShown) {
                 ctx.strokeStyle = "lime";
                 ctx.strokeRect(this.x, this.y, this.width, this.height);
             }
             ctx.drawImage(this.color, this.x, this.y, this.width, this.height);
+        } else if (this.type === "rect") {
+            // Draw a filled rectangle for bullets and any rect component
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            if (GameState.hitboxesShown) {
+                ctx.strokeStyle = "lime";
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+            }
         }
     };
     this.newPos = function () {
@@ -363,7 +559,25 @@ function component(width, height, color, x, y, type = "rect") {
     };
 }
 
+// function updateBulletSlotUI() {
+//     const bulletSlot = document.getElementById("bulletSlot");
+//     const bullet = bulletTypes[currentBulletIndex];
+
+//     if (unlockedBullets.includes(bullet.name)) {
+//         bulletSlot.classList.remove("locked");
+//         bulletSlot.style.backgroundColor = bullet.color;
+//     } else {
+//         bulletSlot.classList.add("locked");
+
+//         // Re-trigger animation
+//         bulletSlot.style.animation = 'none';
+//         bulletSlot.offsetHeight; // force reflow
+//         bulletSlot.style.animation = null;
+//     }
+// }
+
 function updateGameArea() {
+    if (GameState.paused || GameState.isGameOver) return;
     myGamePiece.speedX = -0.6;
     myGamePiece.speedY = 0;
 
@@ -372,7 +586,7 @@ function updateGameArea() {
     const boundaryPaddingY = 0;
 
     // Define boundaries dynamically based on game piece size and canvas size
-    const leftBoundary = 0 + boundaryPaddingX;
+    const leftBoundary = -18 + boundaryPaddingX;
     const topBoundary = 0 + boundaryPaddingY - 8;
     const rightBoundary = myGameArea.canvas.width - myGamePiece.width - boundaryPaddingX + 5;
     const bottomBoundary = myGameArea.canvas.height - myGamePiece.height - boundaryPaddingY + 8;
@@ -407,17 +621,17 @@ function updateGameArea() {
         if (myGamePiece.crashWith(myCoins[i])) {
             coinSound.currentTime = 0.2;
             coinSound.play();
-            score++;
-            scoreHtml.innerHTML = `Score: ${score}`;
+            GameState.score ++;
+            scoreHtml.innerHTML = `Score: ${GameState.score}`;
             myCoins.splice(i, 1);
             break;
         }
     }
     // Level change logic
     if (everyinterval(difficultyRampInterval) && myGameArea.frameNo !== 0) {
-        level++;
-        levelHtml.innerHTML = `Level ${level} (${mode} mode)`;
-        levelPopUpHtml.innerHTML = `Level ${level}`;
+        GameState.level++;
+        levelHtml.innerHTML = `Level ${GameState.level} (${mode} mode)`;
+        levelPopUpHtml.innerHTML = `Level ${GameState.level}`;
         levelPopUpHtml.hidden = false;
         levelPopUpHtml.classList.add("visible");
         setTimeout(() => {
@@ -427,8 +641,20 @@ function updateGameArea() {
         if (amount > 20) amount -= 20;
         if (maxSize < 200) maxSize += 3;
         obstacleSpeed += 0.3; // increase obstacle movement speed
-        friction += 0.1; // increase player movement speed
-        console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", friction);
+        GameState.friction += 0.1; // increase player movement speed
+        console.log(`Level Up!!! (${GameState.level})`);
+        console.log("Amount: ", amount, " Max Size: ", maxSize," Obstacle Speed: ", obstacleSpeed, " Friction: ", GameState.friction);
+        
+        bulletTypes.forEach((bullet, i) => {
+            if (
+            !unlockedBullets.includes(i) &&
+            ((GameState.score >= bullet.cost) || (GameState.level >= bullet.levelRequired))
+            ) {
+            unlockedBullets.push(i);
+            // console.log("Unlocked:", bullet.name);
+            // Optional: show a notification or sound
+            }
+        });
     }
 
     // Create obstacle
@@ -468,22 +694,58 @@ function updateGameArea() {
     });
     myCoins = myCoins.filter(c => c.x + c.width > 0);
 
+    // Update bullets
+    myBullets.forEach((bullet, i) => {
+        bullet.x += bullet.speedX;
+        bullet.y += bullet.speedY;
+        bullet.update();
+    });
+    // Remove bullets that go off screen
+    myBullets = myBullets.filter(b => b.x < myGameArea.canvas.width && b.x > 0 && b.y > 0 && b.y < myGameArea.canvas.height);
+
+    for (let i = myBullets.length - 1; i >= 0; i--) {
+        const bullet = myBullets[i];
+        for (let j = myObstacles.length - 1; j >= 0; j--) {
+            const obstacle = myObstacles[j];
+            if (bullet.crashWith(obstacle)) {
+                for (let i = 0; i < 60; i++) {
+                    debrisParticles.push(new DebrisParticle(
+                        (obstacle.x + obstacle.width / 2)+Math.random()*10-5,
+                        (obstacle.y + obstacle.height / 2)+Math.random()*10-5,
+                        "gray?"
+                    ));
+                }
+                myBullets.splice(i, 1); // Remove bullet
+                myObstacles.splice(j, 1); // Remove obstacle
+                break;
+            }
+        }
+    }
+
+    // Update particles
+    debrisParticles = debrisParticles.filter(p => p.isAlive());
+    debrisParticles.forEach(p => p.update());
+
+    // Draw particles
+    debrisParticles.forEach(p => p.draw(myGameArea.context));
+
+    if (currentBulletIndex>3 || currentBulletIndex<0) {currentBulletIndex=0;}
     // Movement
     const keys = myGameArea.keys || {};
-    if (keys["ArrowUp"] || keys["w"]) myGamePiece.speedY -= 1.5;
-    if (keys["ArrowLeft"] || keys["a"]) myGamePiece.speedX -= 2;
-    if (keys["ArrowDown"] || keys["s"]) myGamePiece.speedY += 1.5;
-    if (keys["ArrowRight"] || keys["d"]) myGamePiece.speedX += 2;
-    if (keys["z"] && keys["x"]) { if (!zxPressed) { coinSound.currentTime = 0.2; coinSound.play(); zxPressed = true; } myGamePiece.speedX += 1.5; } else { zxPressed = false; }
+    if (keys["ArrowUp"] || keys["w"] || keys["W"]) {myGamePiece.speedY -= 1.5;}
+    if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {myGamePiece.speedX -= 2;}
+    if (keys["ArrowDown"] || keys["s"] || keys["S"]) {myGamePiece.speedY += 1.5;}
+    if (keys["ArrowRight"] || keys["d"] || keys["D"]) {myGamePiece.speedX += 2; myGamePiece.color = rocketImage; if (myGamePiece.x > 500 && myGamePiece.x < 800 && 1==0) {myGamePiece.speedX += 1;};} else {myGamePiece.color = rocketImage2;}
+    if (keys["z"] && keys["x"]) { if (!GameState.zxPressed) { coinSound.currentTime = 0.2; coinSound.play(); GameState.zxPressed = true; } myGamePiece.speedX += 1.5; } else { GameState.zxPressed = false; }
     if (keys["r"]) {gameOver(); tryAgain();}
-    if (keys["b"]) {console.log("Hi");};
-    if (keys["h"] && !hPressed && Date.now() - lastHitboxToggle > 300) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; hPressed = true; lastHitboxToggle = Date.now();}
-    if (!keys["h"]) hPressed = false;
-    if (keys["f"] && !fPressed && Date.now() - lastFire > 300) { sonicboom.currentTime = 1.78; sonicboom.play(); hitboxesShown = !hitboxesShown; fPressed = true; lastFire = Date.now();}
-    if (!keys["f"]) fPressed = false;
-    if (paused) return;
-    myGamePiece.speedX *= friction;
-    myGamePiece.speedY *= friction; 
+    if (keys["h"] && !GameState.hPressed && Date.now() - GameState.lastHitboxToggle > 300) { sonicboom.currentTime = 1.78; sonicboom.play(); GameState.hitboxesShown = !GameState.hitboxesShown; GameState.hPressed = true; GameState.lastHitboxToggle = Date.now();}
+    if (!keys["h"]) GameState.hPressed = false;
+    if (keys["f"] && !GameState.fPressed && Date.now() - GameState.lastFire > bulletTypes[currentBulletIndex].fireRate) {sonicboom.currentTime = 1.78; sonicboom.play(); fireBullet(); GameState.fPressed = true; GameState.lastFire = Date.now();}
+    if (!keys["f"]) {GameState.fPressed = false;}
+    if (keys["e"]) switchBullet(1); // next
+    if (keys["q"]) switchBullet(-1); // previous    
+    myGamePiece.speedX *= GameState.friction;
+    myGamePiece.speedY *= GameState.friction; 
     myGamePiece.newPos();
     myGamePiece.update();
 }
