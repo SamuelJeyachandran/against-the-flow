@@ -10,27 +10,30 @@
 
 <body>
     <div id="deathOverlay"></div>
-
-    <div id="pauseOverlay">
-      <div class="pause-wrapper">
-        <div id="gamePaused">Game Paused</div>
+    <div id="pauseOverlay" class="overlay">
+      <div class="overlay-content">
+        <h2>Paused</h2>
         <button id="resumeBtn">Resume</button>
         <button id="tryAgainPauseBtn">Try Again</button>
         <button id="backPauseBtn">Back</button>
       </div>
-    </div>    
-
+    </div>
     <div id="menu">
         <div id="menuContent">
             <h1 id="title"> Against the Flow</h1>
-            <p id="splashText">Press F to fire a bullet!!!</p>
-            <!-- <p id="splashText">Press P to Pause!!!</p> -->
+            <!-- <p id="splashText">Press Space to fire a bullet!!!</p> -->
+            <p id="splashText">Press P to Pause!!!</p>
             <button class="start" id="startNormalMode" onclick="startNormalMode()">Start Normal Mode</button>
             <button class="start" id="startHardMode" onclick="startHardMode()">Start Hard Mode</button>
             <button class="start" id="startExtremeMode" onclick="startExtremeMode()">Start Extreme Mode</button>
             <button class="start" id="creditsButton" onclick="toggleCredits()">Credits</button>
+            <button class="start" id="instructionsButton" onclick="toggleInstructions()">How to Play</button>
+            <div id="instructions" style="display:none;">
+                <p>Arrow keys or WASD to move <br> Space to fire a Bullet <br> P to Pause <br> R to Restart <br> H for Hitboxes</p>
+                <button class="start" id="instructionsClose" onclick="hideInstructions()">Close</button>
+            </div>
             <div id="credits" style="display:none;">
-                <p>Game by Samuel Jeyachandran.</p>
+                <p>Game by Samuel Jeyachandran and Ayan Payda</p>
                 <button class="start" id="creditClose" onclick="hideCredits()">Close</button>
             </div>
         </div>
@@ -43,12 +46,16 @@
       <h2 id="gameOverTitle">Game Over</h2>
       <h2 id="finalScoreText"></h2>
       <button id="tryagain" onclick="tryAgain()">Try Again</button>
-      <button id="back" onclick="back()">Back</button>
+      <button id="back" onclick="back(true)">Back</button>
     </div>
-    <!-- <button hidden id="pauseButton">⏸ Pause</button> -->
-    <!-- <div id="bulletSlotWrapper">
-      <div id="bulletSlot"></div>
-    </div> -->
+    <!-- <button id="pauseButton">⏸ Pause</button> -->
+    <div style="opacity: 0;" id="bulletSlotWrapper">
+      <div id="bulletSlotSelector"></div>
+      <div id="bulletSlot0" class="bulletSlot"></div>
+      <div id="bulletSlot1" class="bulletSlot"><div class="lockOverlay"></div></div>
+      <div id="bulletSlot2" class="bulletSlot"><div class="lockOverlay"></div></div>
+      <div id="bulletSlot3" class="bulletSlot"><div class="lockOverlay"></div></div>
+    </div>
     <script src="script.js"></script>
     <!-- <script>
         (function(h,o,u,n,d) {

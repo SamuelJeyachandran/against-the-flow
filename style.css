@@ -63,6 +63,7 @@ canvas {
 #maxScore,
 #level,
 #levelPopUp {
+    z-index: 100001 !important;
     position: absolute;
     z-index: 20;
     color: rgb(255, 255, 255);
@@ -91,23 +92,24 @@ canvas {
     transition: opacity 0.3s ease;
     opacity: 0;
 }
+
 #levelPopUp.visible {
     opacity: 1;
 }
 
 #pauseButton {
-  position: fixed;
-  top: 750px;
-  right: 18px;
-  padding: 10px 16px;
-  background-color: #3399ff;
-  border:#000000;
-  border-width: 2px;
-  border-radius: 6px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 101;
+    position: fixed;
+    top: 750px;
+    right: 18px;
+    padding: 10px 16px;
+    background-color: #3399ff;
+    border: #000000;
+    border-width: 2px;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 101;
 }
 
 #deathOverlay {
@@ -126,19 +128,31 @@ canvas {
 
 .overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.7);
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    z-index: 100;
-}
+    z-index: 9999;
 
-.overlay.visible {
+  }
+  
+  .overlay.visible {
     opacity: 1;
-    pointer-events: auto;
+    pointer-events: all;
 }
+  
+  .overlay-content {
+    background: #222;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  
 
 .pause-wrapper {
     position: fixed;
@@ -150,7 +164,8 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px; /* Equal spacing between all items */
+    gap: 25px;
+    /* Equal spacing between all items */
 }
 
 #gamePaused {
@@ -204,25 +219,54 @@ canvas {
     transform: scale(1.05);
 }
 
+/* === FULLSCREEN DARK TRANSPARENT OVERLAY === */
 #pauseOverlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 20;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-#pauseOverlay.visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+    width: 100vw;
+    height: 100vh;
+
+    background: rgba(0,0,0,0.6);
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 99999;
 }
 
+#pauseOverlay.visible {
+    display: flex;
+}
+
+/* === CENTERED PAUSE BOX === */
+#pauseOverlay .overlay-content {
+    background: #111;
+    padding: 40px;
+    border-radius: 16px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+
+    width: 380px;
+}
+
+#pauseOverlay h2 {
+    margin: 0;
+    font-size: 42px;
+    color: white;
+}
+
+#pauseOverlay button {
+    width: 250px;
+    font-size: 28px;
+    padding: 15px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+}
 /* === Menu === */
 #menu {
     display: flex;
@@ -256,7 +300,9 @@ h1 {
 }
 
 /* === Buttons (Common Style Base) === */
-.start,#tryagain,#back {
+.start,
+#tryagain,
+#back {
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -289,14 +335,16 @@ h1 {
     transform: translate(-50%, -50%);
     text-align: center;
     z-index: 101;
-    display: none; /* Start hidden */
+    display: none;
+    /* Start hidden */
     flex-direction: column;
     align-items: center;
     gap: 25px;
 }
 
 .gameover-wrapper.visible {
-    display: flex; /* Show when visible */
+    display: flex;
+    /* Show when visible */
 }
 
 /* Game Over title (same style as Game Paused) */
@@ -327,6 +375,7 @@ h1 {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
     transition: all 0.3s ease;
 }
+
 #tryagain:hover {
     background-color: #921c1c;
     transform: scale(1.05);
@@ -344,6 +393,7 @@ h1 {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
     transition: all 0.3s ease;
 }
+
 #back:hover {
     background-color: #363636;
     transform: scale(1.05);
@@ -357,41 +407,99 @@ h1 {
     transform: translate(-50%, -50%);
 } */
 @keyframes example {
-    0%   {left:-200px; top:-200px;}
-    25%  {left:200px; top:-200px;}
-    50%  {left:200px; top:200px;}
-    75%  {left:-200px; top:200px;}
-    100% {left:-200px; top:-200px;}
-  }
-  @keyframes another {
-    0%   {transform: rotate(-20deg);}
-    12.5%  {transform: rotate(-10deg);}
-    25%  {transform: rotate(0deg);}
-    37.5%  {transform: rotate(10deg);}
-    50% {transform: rotate(20deg);}
-    62.5%  {transform: rotate(10deg);}
-    75%  {transform: rotate(0deg);}
-    87.5%  {transform: rotate(-10deg);}
-    100% {transform: rotate(-20deg);}
-  }
-  
-  /* The element to apply the animation to */
-  #splashText {
-    left:0px; top:-200px;
+    0% {
+        left: -200px;
+        top: -200px;
+    }
+
+    25% {
+        left: 200px;
+        top: -200px;
+    }
+
+    50% {
+        left: 200px;
+        top: 200px;
+    }
+
+    75% {
+        left: -200px;
+        top: 200px;
+    }
+
+    100% {
+        left: -200px;
+        top: -200px;
+    }
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(-20deg);
+    }
+
+    12.5% {
+        transform: rotate(-10deg);
+    }
+
+    25% {
+        transform: rotate(0deg);
+    }
+
+    37.5% {
+        transform: rotate(10deg);
+    }
+
+    50% {
+        transform: rotate(20deg);
+    }
+
+    62.5% {
+        transform: rotate(10deg);
+    }
+
+    75% {
+        transform: rotate(0deg);
+    }
+
+    87.5% {
+        transform: rotate(-10deg);
+    }
+
+    100% {
+        transform: rotate(-20deg);
+    }
+}
+
+/* The element to apply the animation to */
+#splashText {
+    left: 0px;
+    top: -200px;
     transform: rotate(-30deg);
     position: relative;
-    /* animation-name: another;
-    animation-duration: 2s;
-    animation-iteration-count: infinite; */
-    animation: another 2s infinite ease-in-out;
-  }
+    animation: rotate 2s infinite ease-in-out;
+    /* animation: example 5s infinite ease-in-out; */
+}
 
 /* === Credits Section === */
-#creditsButton {
+#instructionsButton {
     top: 66%;
 }
 
+#creditsButton {
+    top: 74%;
+}
+
 #credits {
+    top: 84%;
+}
+
+#instructions {
+    top: 80%;
+}
+
+#credits,
+#instructions {
     border: none;
     border-radius: 12px;
 
@@ -399,7 +507,6 @@ h1 {
     padding: 14px 32px;
     font-size: 15px;
     position: fixed;
-    top: 76%;
     left: 50%;
     transform: translate(-50%, -50%);
 
@@ -409,7 +516,8 @@ h1 {
     z-index: 20;
 }
 
-#creditClose {
+#creditClose,
+#instructionsClose {
     background-color: #696969;
     font-size: 15px;
     padding: 8px 16px;
@@ -429,38 +537,81 @@ h1 {
 }
 
 #bulletSlotWrapper {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 60px;
-  border: 3px solid #999;
-  border-radius: 10px;
-  background-color: #222;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 101;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    height: 70px;
+    background-color: #222;
+    border: 3px solid #888;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    z-index: 100;
+    padding: 0 10px;
+    box-shadow: 0 0 8px #000;
 }
 
-#bulletSlot {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: gray;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+.lockOverlay {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 102;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
 }
 
-#bulletSlot.locked {
-  animation: shake 0.4s ease;
-  background-color: red !important;
+.lock-overlay::before {
+    content: "";
+    width: 70%;
+    height: 4px;
+    background-color: white;
+    transform: rotate(-45deg);
+    border-radius: 2px;
+}
+
+.bulletSlot {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border-color: black;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    z-index: 101;
+}
+
+#bulletSlot0 { background-color: red; }
+#bulletSlot1 { background-color: orange; }
+#bulletSlot2 { background-color: cyan; }
+#bulletSlot3 { background-color: magenta; }
+
+#bulletSlotSelector {
+    position: absolute;
+    width: 59px;
+    height: 60px;
+    border-radius: 12px;
+    border: 3px solid #555555;
+    background-color: #949494;
+    transition: left 0.3s ease;
+    top: 2px;
+    transform: translateX(-3px);
+    z-index: 99;
+}
+
+.locked {
+    background-color: red !important;
+    animation: shake 0.3s ease;
 }
 
 @keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-4px); }
-  100% { transform: translateX(0); }
+    0%   { transform: translateX(0); }
+    25%  { transform: translateX(-5px); }
+    50%  { transform: translateX(5px); }
+    75%  { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
 }
